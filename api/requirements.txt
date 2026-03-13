@@ -1,0 +1,10 @@
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+cryptography==42.0.0
+bcrypt==4.1.2
+zxcvbn==4.4.28
+PyGithub==2.1.1
+requests==2.31.0
+beautifulsoup4==4.12.2
+scapy==2.5.0
