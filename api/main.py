@@ -731,6 +731,73 @@ async def stop_capture():
         "packets": packet_storage["packets"]
     }
 
+# ============ WEB VULNERABILITY SCANNER ENDPOINTS ============
+
+class VulnScanRequest(BaseModel):
+    url: str
+    timeout: Optional[int] = 10
+
+@app.post("/api/scan/vulnerabilities")
+async def scan_vulnerabilities(request: VulnScanRequest):
+    """
+    Scan website for vulnerabilities
+    SQL Injection, XSS, Security Headers, Information Disclosure
+    """
+    try:
+        from web_vuln_scanner import WebVulnScanner
+        
+        scanner = WebVulnScanner(request.url, request.timeout)
+        results = scanner.scan_all()
+        
+        return results
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Scan failed: {str(e)}")
+
+@app.get("/api/scan/vulnerabilities/signature")
+async def get_vulnerability_signatures():
+    """Get list of vulnerabilities this scanner can detect"""
+    return {
+        "vulnerabilities": [
+            {
+                "type": "SQL Injection",
+                "severity": "Critical",
+                "description": "Database injection through user input",
+                "tests": ["Error-based detection", "Union-based detection"]
+            },
+            {
+                "type": "Cross-Site Scripting (XSS)",
+                "severity": "High", 
+                "description": "JavaScript injection in web pages",
+                "tests": ["Reflected XSS detection"]
+            },
+            {
+                "type": "Missing Security Headers",
+                "severity": "Medium",
+                "description": "HSTS, CSP, X-Frame-Options, etc.",
+                "tests": ["Header analysis"]
+            },
+            {
+                "type": "Information Disclosure",
+                "severity": "Medium",
+                "description": "Sensitive files and version information exposed",
+                "tests": ["Common file detection", "Header analysis"]
+            },
+            {
+                "type": "Directory Listing",
+                "severity": "Low",
+                "description": "Directory indexing enabled",
+                "tests": ["Path enumeration"]
+            },
+            {
+                "type": "Outdated Software",
+                "severity": "High",
+                "description": "Known vulnerable software versions",
+                "tests": ["Version fingerprinting"]
+            }
+        ]
+    }
+
 # ============ HEALTH CHECK ============
 
 @app.get("/api/health")

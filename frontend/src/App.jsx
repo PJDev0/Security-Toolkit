@@ -3,7 +3,7 @@ import {
   Shield, Lock, Globe, Search, FileCode, Github, 
   Terminal, Copy, Check, AlertTriangle, ArrowLeft,
   RefreshCw, Eye, EyeOff, Zap, Activity, Key,
-  Server, Code, Fingerprint, ChevronRight, Sparkles
+  Server, Code, Fingerprint, ChevronRight, Sparkles, ShieldAlert
 } from 'lucide-react'
 
 // Tool registry with enhanced metadata
@@ -70,6 +70,15 @@ const tools = [
     icon: Activity,
     color: '#ff6b6b',
     gradient: 'from-red-500/20 to-pink-500/5'
+  },
+   {
+    id: 'vulnscan',
+    name: 'Vulnerability Scanner',
+    shortName: 'Vuln Scan',
+    description: 'Scan websites for SQL injection, XSS, and security misconfigurations',
+    icon: ShieldAlert,
+    color: '#dc2626',
+    gradient: 'from-red-600/20 to-orange-600/5'
   }
 ]
 
@@ -1524,7 +1533,198 @@ function PacketAnalyzer() {
     </div>
   )
 }
+// VULNERABILITY SCANNER COMPONENT
+function VulnerabilityScanner() {
+  const [url, setUrl] = useState('')
+  const [scanning, setScanning] = useState(false)
+  const [results, setResults] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [selectedSeverity, setSelectedSeverity] = useState('All')
 
+  const startScan = async () => {
+    if (!url) return
+    setScanning(true)
+    setLoading(true)
+    setResults(null)
+    
+    try {
+      const res = await fetch('/api/scan/vulnerabilities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, timeout: 30 })
+      })
+      
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.detail || 'Scan failed')
+      }
+      
+      setResults(await res.json())
+    } catch (err) {
+      console.error(err)
+    }
+    setLoading(false)
+    setScanning(false)
+  }
+
+  const severityColors = {
+    'Critical': 'text-red-500 bg-red-500/10 border-red-500/20',
+    'High': 'text-orange-500 bg-orange-500/10 border-orange-500/20',
+    'Medium': 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20',
+    'Low': 'text-blue-500 bg-blue-500/10 border-blue-500/20',
+    'Info': 'text-gray-400 bg-gray-500/10 border-gray-500/20'
+  }
+
+  const filteredFindings = results?.findings?.filter(f => 
+    selectedSeverity === 'All' || f.severity === selectedSeverity
+  ) || []
+
+  const severityCounts = {
+    Critical: results?.findings?.filter(f => f.severity === 'Critical').length || 0,
+    High: results?.findings?.filter(f => f.severity === 'High').length || 0,
+    Medium: results?.findings?.filter(f => f.severity === 'Medium').length || 0,
+    Low: results?.findings?.filter(f => f.severity === 'Low').length || 0
+  }
+
+  return (
+    <div className="space-y-5 fade-in">
+      <div className="danger-zone">
+        <div className="flex items-start gap-3">
+          <ShieldAlert className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <h4 className="text-sm font-semibold text-red-400 mb-1">Authorized Testing Only</h4>
+            <p className="text-xs text-red-300/80 leading-relaxed">
+              Only scan websites you own or have explicit written permission to test. 
+              Unauthorized vulnerability scanning may violate laws and terms of service.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex gap-3">
+        <input
+          type="text"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="https://example.com"
+          className="input-field flex-1"
+        />
+        <button 
+          onClick={startScan} 
+          disabled={loading || !url}
+          className="btn-primary px-6"
+        >
+          {loading ? 'Scanning...' : 'Scan'}
+        </button>
+      </div>
+
+      {scanning && (
+        <div className="flex items-center gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
+          <RefreshCw className="w-5 h-5 text-amber-400 animate-spin" />
+          <div>
+            <p className="text-sm text-amber-400 font-medium">Scanning in progress...</p>
+            <p className="text-xs text-amber-300/70">Testing for SQL injection, XSS, and security misconfigurations</p>
+          </div>
+        </div>
+      )}
+
+      {results && (
+        <div className="space-y-4 fade-in">
+          <div className="grid grid-cols-4 gap-3">
+            <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-center">
+              <div className="text-2xl font-bold text-red-400">{severityCounts.Critical}</div>
+              <div className="text-xs text-gray-500">Critical</div>
+            </div>
+            <div className="p-4 rounded-lg bg-orange-500/10 border border-orange-500/20 text-center">
+              <div className="text-2xl font-bold text-orange-400">{severityCounts.High}</div>
+              <div className="text-xs text-gray-500">High</div>
+            </div>
+            <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-center">
+              <div className="text-2xl font-bold text-yellow-400">{severityCounts.Medium}</div>
+              <div className="text-xs text-gray-500">Medium</div>
+            </div>
+            <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20 text-center">
+              <div className="text-2xl font-bold text-blue-400">{severityCounts.Low}</div>
+              <div className="text-xs text-gray-500">Low</div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10">
+            <span className="text-sm text-gray-400">Target</span>
+            <span className="text-sm font-mono text-gray-300">{results.target}</span>
+          </div>
+
+          <div className="flex gap-2">
+            {['All', 'Critical', 'High', 'Medium', 'Low'].map(sev => (
+              <button
+                key={sev}
+                onClick={() => setSelectedSeverity(sev)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  selectedSeverity === sev 
+                    ? 'bg-white/10 text-white' 
+                    : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                {sev} {sev !== 'All' && `(${severityCounts[sev] || 0})`}
+              </button>
+            ))}
+          </div>
+
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {filteredFindings.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No vulnerabilities found
+              </div>
+            ) : (
+              filteredFindings.map((finding, idx) => (
+                <div 
+                  key={idx}
+                  className={`p-4 rounded-lg border ${severityColors[finding.severity] || severityColors.Info}`}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-0.5 rounded text-xs font-bold bg-black/30`}>
+                        {finding.severity}
+                      </span>
+                      <h4 className="font-semibold">{finding.type}</h4>
+                    </div>
+                  </div>
+                  
+                  <p className="text-sm text-gray-300 mb-2">{finding.description}</p>
+                  
+                  {finding.url && (
+                    <div className="text-xs font-mono text-gray-500 mb-2 break-all">
+                      URL: {finding.url}
+                    </div>
+                  )}
+                  
+                  {finding.evidence && (
+                    <div className="p-2 rounded bg-black/20 text-xs text-gray-400 mb-2">
+                      Evidence: {finding.evidence}
+                    </div>
+                  )}
+                  
+                  {finding.remediation && (
+                    <div className="flex items-start gap-2 text-xs text-emerald-400/80">
+                      <Zap className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                      <span>Fix: {finding.remediation}</span>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="flex items-center justify-between text-xs text-gray-500 pt-4 border-t border-white/5">
+            <span>{results.forms_found} forms detected</span>
+            <span>{results.links_found} links discovered</span>
+            <span>{results.total_findings} total findings</span>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 // MAIN APP COMPONENT
 export default function App() {
   const [activeTool, setActiveTool] = useState(null)
@@ -1538,6 +1738,7 @@ export default function App() {
       case 'webtech': return <WebTechDetector />
       case 'scorecard': return <RepoScorecard />
       case 'packets': return <PacketAnalyzer />
+       case 'vulnscan': return <VulnerabilityScanner />
       default: return null
     }
   }
