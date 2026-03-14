@@ -77,3 +77,5 @@ Access the interface at http://localhost:5173
 | `/api/detect/webtech`    | POST   | Web technology identification |
 | `/api/scorecard`         | POST   | GitHub repository analysis    |
 | `/api/health`            | GET    | Service health check          |
+
+by PJDev0
