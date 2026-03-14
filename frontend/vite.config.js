@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/security-toolkit/',  // ADD THIS LINE - use your repo name
+  base: '/Security-Toolkit/',  // ADD THIS LINE - use your repo name
   server: {
     port: 5173,
     proxy: {
